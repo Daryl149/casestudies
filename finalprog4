@@ -1,0 +1,1098 @@
+smpl @all
+series scorexweightMath=ASMSCPT*totwgt
+series scorexweightScience=ASSSCPT*totwgt
+vector(8) weightedmeanMath
+vector(8) weightedstdevMath
+vector(8) weightedmeanScience
+vector(8) weightedstdevScience
+vector(10) countries
+countries.fill 40,124,203,926,300,352,392,554,578,620
+series stdScoreMath 
+series stdScoreScience
+series agem=(ITDATEY-ITBIRTHY)*12+(ITDATEM-ITBIRTHM)
+
+for !i=1 to 8
+smpl @all if IDBOOK=!i
+weightedmeanMath(!i)=@sum(scorexweightMath)/@sum(totwgt)
+weightedmeanScience(!i)=@sum(scorexweightScience)/@sum(totwgt)
+series tempMath=@sqrt(@sum(totwgt*(ASMSCPT-weightedmeanMath(!i))^2)/@sum(totwgt))
+series tempScience=@sqrt(@sum(totwgt*(ASSSCPT-weightedmeanScience(!i))^2)/@sum(totwgt))
+weightedstdevMath(!i)=@mean(tempMath)
+weightedstdevScience(!i)=@mean(tempScience)
+stdScoreMath=((ASMSCPT-weightedmeanMath(!i))/weightedstdevMath(!i))*10+50
+stdScoreScience=((ASSSCPT-weightedmeanScience(!i))/weightedstdevScience(!i))*10+50
+next
+
+smpl @all
+'set cutoff dates per country.
+series cutoff = 1
+'CZE ENG SLV.
+smpl @all if IDCNTRY=40 OR IDCNTRY=203 OR IDCNTRY=926 OR IDCNTRY=703
+cutoff = 9
+'GRC JPN
+smpl @all if (IDCNTRY=300 OR IDCNTRY=392)
+cutoff = 4
+'NZL
+smpl @all if (IDCNTRY=554)
+cutoff = 5
+'Relative Age.
+smpl @all
+series RAW = CUTOFF + 11 - ITBIRTHM
+series R = RAW
+smpl @all if (RAW > 11)
+R = RAW-12
+
+
+matrix(10,9) descriptives
+smpl @all
+series tempMath = stdScoreMath*totwgt
+series tempScience=stdScoreScience*totwgt
+for !i=1 to 10
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND IDCNTRY=countries(!i)
+descriptives(!i,1)=@sum(tempMath)/@sum(totwgt)
+series temp1=@sqrt(@sum(totwgt*(stdScoreMath-descriptives(!i,1))^2)/@sum(totwgt))
+descriptives(!i,2)=@mean(temp1)
+descriptives(!i,3)=@sum(tempScience)/@sum(totwgt)
+series temp2=@sqrt(@sum(totwgt*(stdScoreScience-descriptives(!i,3))^2)/@sum(totwgt))
+descriptives(!i,4)=@mean(temp2)
+series tempR = R*totwgt
+descriptives(!i,5)=@sum(tempR)/@sum(totwgt)
+series tempRSD = @sqrt(@sum(totwgt*(R-descriptives(!i,5))^2)/@sum(totwgt))
+descriptives(!i,6)=@mean(tempRSD)
+series tempage = agem*totwgt
+descriptives(!i,7)=@sum(tempage)/@sum(totwgt)
+series tempageSD = @sqrt(@sum(totwgt*(agem-descriptives(!i,7))^2)/@sum(totwgt))
+descriptives(!i,8)=@mean(tempageSD)
+descriptives(!i,9)=@obssmpl
+next
+show descriptives
+
+smpl @all
+series stdscoremathall=0
+series stdscorescienceall=0
+for !k=1 to 10
+for !i=1 to 8
+
+smpl @all if IDBOOK=!i AND IDCNTRY=countries(!k)
+weightedmeanMath(!i)=@sum(scorexweightMath)/@sum(totwgt)
+weightedmeanScience(!i)=@sum(scorexweightScience)/@sum(totwgt)
+series tempMath=@sqrt(@sum(totwgt*(ASMSCPT-weightedmeanMath(!i))^2)/@sum(totwgt))
+series tempScience=@sqrt(@sum(totwgt*(ASSSCPT-weightedmeanScience(!i))^2)/@sum(totwgt))
+weightedstdevMath(!i)=@mean(tempMath)
+weightedstdevScience(!i)=@mean(tempScience)
+series stdScoreMathAll=((ASMSCPT-weightedmeanMath(!i))/weightedstdevMath(!i))*10+50
+series stdScoreScienceAll=((ASSSCPT-weightedmeanScience(!i))/weightedstdevScience(!i))*10+50
+next
+next
+
+matrix(10,8) table3Math= NA
+matrix(10,8) table3Science= NA
+matrix(10,5) percentilesMath = NA
+series MathScorehat = NA
+
+'=======================================================
+
+'Draai dit programma na STANDARDIZE AND OLS ESTIMATION_editedforwebbink op de dataset TIMMS_GRADE4_1995_MISSINGS=999.WF1
+
+'Maak series aan voor asigned relativeage
+smpl @all
+series R_WG = NA
+
+'Austria
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=40
+
+R_WG=-AGEM+117
+
+'Canada
+
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=124
+
+R_WG=-AGEM+112
+
+'CZE NAKIJKEN!
+
+'smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=203 
+
+'R_WG=-AGEM+117
+
+
+'test CZE 1
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=203 AND ITDATEM = 5
+
+R_WG=-AGEM+116
+
+
+'test CZE 2
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=203 AND ITDATEM = 6 
+
+R_WG=-AGEM+117
+
+
+
+'England
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=926
+
+R_WG=-AGEM+114
+
+'Greece
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=300
+
+R_WG=-AGEM+108
+
+'Iceland
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=352
+
+R_WG=-AGEM+109
+
+'Japan
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=392
+
+R_WG=-AGEM+118
+
+'New Zealand
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=554
+
+R_WG=-AGEM+113
+
+'Norway Nakijken!!
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=578 AND ITDATEM=3
+
+R_WG=-AGEM+110
+
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=578 AND ITDATEM=4
+
+R_WG=-AGEM+111
+
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=578 AND ITDATEM=5
+
+R_WG=-AGEM+112
+
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=578 AND ITDATEM=6
+
+R_WG=-AGEM+113
+
+'Portugal
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=620 AND ITDATEM =4
+
+R_WG=-AGEM+111
+
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=620 AND ITDATEM =5
+
+R_WG=-AGEM+112
+
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999   AND IDCNTRY=620 AND ITDATEM =6
+
+R_WG=-AGEM+113
+
+
+'++++++++++++make new scores+++++++++++++++++
+'hardcode our obsrange
+scalar numrows=176709
+scalar lastrow = numrows
+
+'vector(10) retention10grade3
+'retention10grade3.fill 130,160,100,19,32,12,1,7,3,70
+
+'vector(10) acceleration8grade4
+'acceleration8grade4.fill 2,77,1,5,7,5,4,8,1,4
+
+
+
+'-------------landen means loop-------------------------
+
+for !m = 1 to 10
+
+' ADDED
+			series mathmeans3 = NA
+			series sciencemeans3 = NA
+
+		'smpl group 3
+			smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=countries(!m)) AND (R_WG>-13 AND R_WG<12) AND IDGRADER =1
+			
+
+			
+			'means of 3rd graders by assigned relative age
+			mathmeans3 = @meansby(stdscoremathall, r_wg)
+			sciencemeans3 = @meansby(stdscorescienceall, r_wg)
+
+
+			series mathmeans4 = NA
+			series sciencemeans4 = NA			
+
+			'smpl group 4
+			smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=countries(!m)) AND (R_WG>-13 AND R_WG<12) AND IDGRADER =2
+			
+
+
+			'means of 4th graders by assigned relative age
+			mathmeans4 = @meansby(stdscoremathall, r_wg)
+			sciencemeans4 = @meansby(stdscorescienceall, r_wg)
+			
+			'smpl all
+			smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=countries(!m)) AND (R_WG>-13 AND R_WG<12) 
+			
+			'place means besides relative age (3rdgrade math)
+			matrix(numrows, 2) r_wgmathmeans3 
+			colplace(r_wgmathmeans3, r_wg, 1)
+			colplace(r_wgmathmeans3, mathmeans3, 2)
+			
+			'place means besides relative age (3rdgrade science)
+			matrix(numrows, 2) r_wgsciencemeans3 
+			colplace(r_wgsciencemeans3, r_wg, 1)
+			colplace(r_wgsciencemeans3, sciencemeans3, 2)
+			
+			'place means besides relative age (4thgrade math)
+			matrix(numrows, 2) r_wgmathmeans4 
+			colplace(r_wgmathmeans4, r_wg, 1)
+			colplace(r_wgmathmeans4, mathmeans4, 2)
+			
+			'place means besides relative age (4thgrade science)
+			matrix(numrows, 2) r_wgsciencemeans4 
+			colplace(r_wgsciencemeans4, r_wg, 1)
+			colplace(r_wgsciencemeans4, sciencemeans4, 2)
+			
+			sort r_wg
+
+				
+			'+++++++++make unique average relative age groups++++++++++
+			'3rd grade math
+			matrix(24,2) r_wgmathmeans3uniq!m
+				
+				for !i = 1 to 24
+			
+					r_wgmathmeans3uniq!m(!i,1) = !i-13
+			
+				next
+			
+				for !i = 1 to 24
+					
+						for !j = 1 to numrows
+			
+							if r_wgmathmeans3(!j,1)==!i-13 AND _
+							r_wgmathmeans3(!j,2) <>NA   then
+					
+								r_wgmathmeans3uniq!m(!i,2) = r_wgmathmeans3(!j,2)	
+								!i=!i+1		    						
+							endif
+ 			
+						next
+			
+				next
+			
+			'3rd grade science
+			matrix(24,2) r_wgsciencemeans3uniq!m
+			
+				for !i = 1 to 24
+			
+					r_wgsciencemeans3uniq!m(!i,1) = !i-13
+			
+				next
+				
+				for !i = 1 to 24
+			
+					
+					
+					
+						for !j = 1 to numrows
+			
+							if r_wgsciencemeans3(!j,1)==!i-13 AND _
+							r_wgsciencemeans3(!j,2) <>NA   then
+					
+								r_wgsciencemeans3uniq!m(!i,2) = r_wgsciencemeans3(!j,2)	
+								!i=!i+1	    				
+					
+							endif
+ 			
+						next
+			
+				next
+				
+			'4th grade math
+			matrix(24,2) r_wgmathmeans4uniq!m
+			
+			
+				for !i = 1 to 24
+			
+					r_wgmathmeans4uniq!m(!i,1) = !i-13
+			
+				next
+			
+				
+				for !i = 1 to 24
+			
+					
+					
+						for !j = 1 to numrows
+			
+							if r_wgmathmeans4(!j,1)==!i-13 _
+							AND r_wgmathmeans4(!j,2) <>NA   then
+					
+								r_wgmathmeans4uniq!m(!i,2) = r_wgmathmeans4(!j,2)		  
+								!i=!i+1  				
+							endif
+ 			
+						next
+			
+				next
+			
+				
+			'4th grade science
+			matrix(24,2) r_wgsciencemeans4uniq!m
+			
+				for !i = 1 to 24
+			
+					r_wgsciencemeans4uniq!m(!i,1) = !i-13
+			
+				next
+			
+				
+				for !i = 1 to 24
+			
+					
+					
+					
+						for !j = 1 to numrows
+			
+							if r_wgsciencemeans4(!j,1)==!i-13 _
+							AND r_wgsciencemeans4(!j,2) <>NA   then
+					
+								r_wgsciencemeans4uniq!m(!i,2) = r_wgsciencemeans4(!j,2)
+								!i=!i+1	
+			
+					
+							endif
+ 			
+						next
+			
+				next
+			
+			
+			
+
+			
+
+next
+
+'------------------eind landen means loop--------------------------
+
+
+'*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
+
+'start country loop
+
+' Austria, Canada, Czech, England, Greece, Iceland, Japan, New Zealand, Norway, Portugal
+' 40, 124, 203, 926, 300, 352, 392, 554,578, 620
+
+
+for !k = 1 to 10
+	
+	'smpl all
+	smpl @all' if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=countries(!k)) AND (R_WG>-13 AND R_WG<12) 
+	'+++++++++++estimate difference in average scores missing students++++++++++++
+	
+	'3rd grade math retentions
+	matrix(12,2) mathretentions3!k
+	'3rd grade science retentions
+	matrix(12,2) scienceretentions3!k
+	
+	for !i = 1 to 12
+		mathretentions3!k(!i,1) = !i-1
+		if r_wgmathmeans4uniq!k(!i,2)<>0 AND r_wgmathmeans3uniq!k(!i+12,2)<>0 then
+		mathretentions3!k(!i,2) = r_wgmathmeans3uniq!k(!i,2)-(r_wgmathmeans3uniq!k(!i+12,2)*r_wgmathmeans3uniq!k(!i,2) /r_wgmathmeans4uniq!k(!i,2))							
+		else
+		mathretentions3!k(!i,2) = 0
+		endif
+		scienceretentions3!k(!i,1) = !i-1
+		if r_wgsciencemeans4uniq!k(!i,2) <> 0  AND r_wgsciencemeans3uniq!k(!i+12,2)<>0 then
+		scienceretentions3!k(!i,2) = r_wgsciencemeans3uniq!k(!i,2)-(r_wgsciencemeans3uniq!k(!i+12,2)*r_wgsciencemeans3uniq!k(!i,2) /r_wgsciencemeans4uniq!k(!i,2))	
+		else
+		scienceretentions3!k(!i,2) = 0 
+		endif
+	next
+	
+	'4th grade math accelerations
+	matrix(12,2) mathaccelerations4!k
+	'4th grade science accelerations
+	matrix(12,2) scienceaccelerations4!k
+	
+	for !i = 1 to 12
+		mathaccelerations4!k(!i,1) = !i- 13
+		if r_wgmathmeans3uniq!k(!i+12,2) <> 0  AND r_wgmathmeans4uniq!k(!i+12,2)<>0 then
+		mathaccelerations4!k(!i,2) = r_wgmathmeans4uniq!k(!i,2)-(r_wgmathmeans4uniq!k(!i,2)*r_wgmathmeans4uniq!k(!i+12,2) /r_wgmathmeans3uniq!k(!i+12,2))
+		else 
+		mathaccelerations4!k(!i,2) = 0
+		endif	
+		scienceaccelerations4!k(!i,1) = !i-13
+		if r_wgsciencemeans3uniq!k(!i+12,2) <> 0 AND r_wgsciencemeans4uniq!k(!i+12,2)<>0 then
+		scienceaccelerations4!k(!i,2) = r_wgsciencemeans4uniq!k(!i,2)-(r_wgsciencemeans4uniq!k(!i,2)*r_wgsciencemeans4uniq!k(!i+12,2) /r_wgsciencemeans3uniq!k(!i+12,2))
+		else
+		scienceaccelerations4!k(!i,2) = 0
+		endif
+	next
+	
+next 'end country loop
+
+	
+
+'+++++++++++++++++++++++compute difference in educationscores++++++++++++++++++++
+
+		
+			'+++++++++++++++adjust scores of observed students with unobserved estimates+++++++++++++++
+'------------start insert new student per country loop---------------------
+
+'Sample over "onze" 10 landen
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=40 OR IDCNTRY=124 OR IDCNTRY=203 OR IDCNTRY=926 OR IDCNTRY=300 OR IDCNTRY=352 OR IDCNTRY=392 OR IDCNTRY=554  OR IDCNTRY=578 OR IDCNTRY=620)
+
+			'copy series for all countries
+			series stdscoremathwg = stdscoremathall
+			series stdscoresciencewg = stdscorescienceall
+			series idgraderwg = idgrader	
+			series r_wgwg = r_wg	
+			series agemwg = agem
+			
+	
+
+	
+'observed age, assigned relative age en idgrader aanpassen naar 9 jaar
+'idgrader: 3rd grade = 1, 
+'			  4th grade = 2, 
+'			  2nd grade = 3, 
+'			  5th grade = 4
+
+	'voor retentions sample 9+10 jaar en in G3
+	smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=40 OR IDCNTRY=124 OR IDCNTRY=203 OR IDCNTRY=926 OR IDCNTRY=300 OR IDCNTRY=352 OR IDCNTRY=392 OR IDCNTRY=554  OR IDCNTRY=578 OR IDCNTRY=620) AND idgrader=1 AND (r_wg>-13 AND r_wg<0) AND (agem>107 AND agem <132)
+	
+	idgraderwg=3
+	'idgraderwg=1
+	r_wgwg = r_wg+12
+	agemwg = agem-12
+	
+	
+	'voor accelerations sample 8+9 jaar en in G4
+	smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=40 OR IDCNTRY=124 OR IDCNTRY=203 OR IDCNTRY=926 OR IDCNTRY=300 OR IDCNTRY=352 OR IDCNTRY=392 OR IDCNTRY=554  OR IDCNTRY=578 OR IDCNTRY=620) AND idgrader=2 AND (r_wg>-1 AND r_wg<12) AND (agem>95 AND agem <120)
+	
+	idgraderwg=4
+	'idgraderwg=2
+	r_wgwg = r_wg-12
+	agemwg = agem+12
+	
+
+
+
+	'for each country replace values with estimated averages
+	for !k=1 to 10
+
+		for !m = 1 to 12
+
+	'voor 2nd graders (dummy #3)
+	smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=countries(!k)) AND idgraderwg=3 AND r_wgwg=!m-1
+		
+	stdscoremathwg=stdscoremathall-mathretentions3!k(!m,2)
+	stdscoresciencewg=stdscorescienceall-scienceretentions3!k(!m,2)
+		next
+
+		for !m = 1 to 12
+	'voor 2nd graders (dummy #4)
+	smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=countries(!k)) AND idgraderwg=4 AND r_wgwg=!m-13
+
+	stdscoremathwg=stdscoremathall-mathaccelerations4!k(!m,2)		
+	stdscoresciencewg=stdscorescienceall-scienceaccelerations4!k(!m,2)
+		next
+
+	next
+
+'///////////////////***************++++++start new webbink students++++++********\\\\\\\\\\\\\\\\\
+
+'put together new students webbink
+'3RD GRADE
+'sample 3rd grade and copy in adjusted scores from second grade
+			smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=40 OR IDCNTRY=124 OR IDCNTRY=203 OR IDCNTRY=926 OR IDCNTRY=300 OR IDCNTRY=352 OR IDCNTRY=392 OR IDCNTRY=554  OR IDCNTRY=578 OR IDCNTRY=620) and (idgraderwg = 1 OR idgraderwg=3)
+
+series stdscoremath3rd
+series stdscorescience3rd
+series idgrader3rd
+series age3rd
+
+stdscoremath3rd = stdscoremathwg
+stdscorescience3rd = stdscoresciencewg
+idgrader3rd = 1
+age3rd = agemwg
+
+'resample 4th grade and copy accelerated students into sample
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=40 OR IDCNTRY=124 OR IDCNTRY=203 OR IDCNTRY=926 OR IDCNTRY=300 OR IDCNTRY=352 OR IDCNTRY=392 OR IDCNTRY=554  OR IDCNTRY=578 OR IDCNTRY=620) AND idgraderwg = 2 AND (r_wgwg>-1 AND r_wgwg<12)
+
+stdscoremath3rd = stdscoremathall
+stdscorescience3rd = stdscorescienceall
+idgrader3rd = 1
+age3rd = agem
+
+
+'4TH GRADE
+'sample 4th grade and copy in adjusted scores from fifth grade
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=40 OR IDCNTRY=124 OR IDCNTRY=203 OR IDCNTRY=926 OR IDCNTRY=300 OR IDCNTRY=352 OR IDCNTRY=392 OR IDCNTRY=554  OR IDCNTRY=578 OR IDCNTRY=620) and (idgraderwg = 2 OR idgraderwg=4)
+
+series stdscoremath4th
+series stdscorescience4th
+series idgrader4th
+series age4th
+
+stdscoremath4th = stdscoremathwg
+stdscorescience4th = stdscoresciencewg
+age4th = agemwg
+
+idgrader4th = 2
+
+'resample 3rd grade and copy retained students into sample
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=40 OR IDCNTRY=124 OR IDCNTRY=203 OR IDCNTRY=926 OR IDCNTRY=300 OR IDCNTRY=352 OR IDCNTRY=392 OR IDCNTRY=554  OR IDCNTRY=578 OR IDCNTRY=620) AND idgraderwg = 1 AND (r_wgwg>-13 AND r_wgwg<0)
+
+stdscoremath4th = stdscoremathall
+stdscorescience4th = stdscorescienceall
+idgrader4th = 2
+age4th = agem
+
+
+
+
+'////////////////**********+++++++end new students webbink+++++++******\\\\\\\\\\\\\\\\\\\\\\
+
+'++++++++++++++++++END of script+++++++++++++++++
+
+			'select all 9 year olds in sample range (including new)
+			smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=40 OR IDCNTRY=124 OR IDCNTRY=203 OR IDCNTRY=926 OR IDCNTRY=300 OR IDCNTRY=352 OR IDCNTRY=392 OR IDCNTRY=554  OR IDCNTRY=578 OR IDCNTRY=620)
+
+
+
+'=======================================================
+'Austria
+'OLS
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND IDCNTRY=40 AND (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+'heeft geen idgrader=4 (unobserved accelerations)
+equation austriaolswg1.ls(w=totwgt^0.5, h)  stdScoreMath4th  (itsex=1)  1  age4th  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(1,1)=@coefs(3)
+table3Math(1,2)=@stderrs(3)
+
+equation austriaolswg2.ls(w=totwgt^0.5, h)  stdScoreScience4th  (itsex=1)  1  age4th (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(1,1)=@coefs(3)
+table3Science(1,2)=@stderrs(3)
+
+'RF
+equation austriarfwg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(1,3)=@coefs(3)
+table3Math(1,4)=@stderrs(3)
+
+equation austriarfwg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1) 1 r (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(1,3)=@coefs(3)
+table3Science(1,4)=@stderrs(3)
+
+'FS
+equation austriafswg1.ls(w=totwgt^0.5, h) age4th (itsex=1) 1 r (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(1,5)=@coefs(3)
+table3Math(1,6)=@stderrs(3)
+
+table3Science(1,5)=@coefs(3)
+table3Science(1,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+
+austriafswg1.fit(f=na) agehat
+
+equation austriaivwg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(1,7)=@coefs(3)
+table3Math(1,8)=@stderrs(3)
+
+equation austriaivwg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(1,7)=@coefs(3)
+table3Science(1,8)=@stderrs(3)
+
+'=======================================================
+
+'Canada, zonder  (asbgps02=999)*totwgt , omdat die perfect collinear is met  (asbgps01=999)*totwgt 
+'OLS
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND IDCNTRY=124 AND (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+
+equation canadaolswg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  age4th (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(2,1)=@coefs(3)
+table3Math(2,2)=@stderrs(3)
+
+equation canadaolswg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  age4th  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(2,1)=@coefs(3)
+table3Science(2,2)=@stderrs(3)
+
+'RF
+equation canadarfwg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(2,3)=@coefs(3)
+table3Math(2,4)=@stderrs(3)
+
+equation canadarfwg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  r (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(2,3)=@coefs(3)
+table3Science(2,4)=@stderrs(3)
+
+'FS
+equation canadafswg1.ls(w=totwgt^0.5, h) age4th (itsex=1)  1  r (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(2,5)=@coefs(3)
+table3Math(2,6)=@stderrs(3)
+
+table3Science(2,5)=@coefs(3)
+table3Science(2,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+
+canadafswg1.fit(f=na) agehat
+
+equation canadaivwg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(2,7)=@coefs(3)
+table3Math(2,8)=@stderrs(3)
+
+equation canadaivwg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(2,7)=@coefs(3)
+table3Science(2,8)=@stderrs(3)
+
+'Czech Republic
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND IDCNTRY=203 AND  (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+
+equation czolswg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1) 1 age4th (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgps02=999) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Math(3,1)=@coefs(3)
+table3Math(3,2)=@stderrs(3)
+
+equation czolswg2.ls(w=totwgt^0.5, h)  stdScoreScience4th  (itsex=1)  1  age4th  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(3,1)=@coefs(3)
+table3Science(3,2)=@stderrs(3)
+
+'RF
+equation czrfwg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(3,3)=@coefs(3)
+table3Math(3,4)=@stderrs(3)
+
+equation czrfwg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(3,3)=@coefs(3)
+table3Science(3,4)=@stderrs(3)
+
+'FS
+equation czfswg1.ls(w=totwgt^0.5, h) age4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(3,5)=@coefs(3)
+table3Math(3,6)=@stderrs(3)
+
+table3Science(3,5)=@coefs(3)
+table3Science(3,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+
+czfswg1.fit(f=na) agehat
+
+equation czivwg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(3,7)=@coefs(3)
+table3Math(3,8)=@stderrs(3)
+
+equation czivwg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(3,7)=@coefs(3)
+table3Science(3,8)=@stderrs(3)
+
+'England  !!Zonder asbgps02=999 (want exact gelijk aan asbgps01=999) & idgrade=4!!
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND IDCNTRY=926 AND (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+
+equation englandolswg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1) 1 age4th (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Math(4,1)=@coefs(3)
+table3Math(4,2)=@stderrs(3)
+
+equation englandolswg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  age4th (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Science(4,1)=@coefs(3)
+table3Science(4,2)=@stderrs(3)
+
+'RF
+equation englandrfwg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r   (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Math(4,3)=@coefs(3)
+table3Math(4,4)=@stderrs(3)
+
+equation englandrfwg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Science(4,3)=@coefs(3)
+table3Science(4,4)=@stderrs(3)
+
+'FS
+equation englandfswg1.ls(w=totwgt^0.5, h) age4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Math(4,5)=@coefs(3)
+table3Math(4,6)=@stderrs(3)
+
+table3Science(4,5)=@coefs(3)
+table3Science(4,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+
+englandfswg1.fit(f=na) agehat
+
+equation englandivwg1.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat  (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Math(4,7)=@coefs(3)
+table3Math(4,8)=@stderrs(3)
+
+equation englandivwg2.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat  (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Science(4,7)=@coefs(3)
+table3Science(4,8)=@stderrs(3)
+
+'Greece
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND IDCNTRY=300  AND (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+
+equation greeceols1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1) 1 age4th  (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgps02=999) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Math(5,1)=@coefs(3)
+table3Math(5,2)=@stderrs(3)
+
+equation greeceols2wg.ls(w=totwgt^0.5, h)  stdScoreScience4th  (itsex=1)  1  age4th  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(5,1)=@coefs(3)
+table3Science(5,2)=@stderrs(3)
+
+'RF
+equation greecerf1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(5,3)=@coefs(3)
+table3Math(5,4)=@stderrs(3)
+
+equation greecerf2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  r (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(5,3)=@coefs(3)
+table3Science(5,4)=@stderrs(3)
+
+'FS
+equation greecefs1wg.ls(w=totwgt^0.5, h) age4th (itsex=1)  1  r (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(5,5)=@coefs(3)
+table3Math(5,6)=@stderrs(3)
+
+table3Science(5,5)=@coefs(3)
+table3Science(5,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+
+greecefs1wg.fit(f=na) agehat
+
+equation greeceiv1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(5,7)=@coefs(3)
+table3Math(5,8)=@stderrs(3)
+
+equation greeceiv2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(5,7)=@coefs(3)
+table3Science(5,8)=@stderrs(3)
+
+
+
+'Iceland
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND IDCNTRY=352   AND (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+
+equation icelandols1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1) 1 age4th  (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgps02=999) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Math(6,1)=@coefs(3)
+table3Math(6,2)=@stderrs(3)
+
+equation icelandols2wg.ls(w=totwgt^0.5, h)  stdScoreScience4th  (itsex=1)  1  age4th  (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgps02=999) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Science(6,1)=@coefs(3)
+table3Science(6,2)=@stderrs(3)
+
+'RF
+equation icelandrf1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r   (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) (asbgbrnm=1) (asbgbrnm=999) (asbgbrnf=1) (asbgbrnf=999) (asbgadu1=1 AND asbgadu2=1) (asbgadu1=999 OR asbgadu2=999) (asbgps01=1) (asbgps01=999) (asbgps02=1) (asbgps02=999) (asbgbook=4 or asbgbook=5) (asbgbook=999) (asbghome<999)*asbghome (asbghome=999)
+
+table3Math(6,3)=@coefs(3)
+table3Math(6,4)=@stderrs(3)
+
+equation icelandrf2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  r   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(6,3)=@coefs(3)
+table3Science(6,4)=@stderrs(3)
+
+'FS
+equation icelandfs1wg.ls(w=totwgt^0.5, h) age4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(6,5)=@coefs(3)
+table3Math(6,6)=@stderrs(3)
+
+table3Science(6,5)=@coefs(3)
+table3Science(6,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+icelandfs1wg.fit(f=na) agehat
+
+equation icelandiv1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(6,7)=@coefs(3)
+table3Math(6,8)=@stderrs(3)
+
+equation icelandiv2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(6,7)=@coefs(3)
+table3Science(6,8)=@stderrs(3)
+
+
+'Japan !!Remove all control variables (all missing) except for itsex, idgrade and acbcgcomm!!
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND IDCNTRY=392  AND (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+
+equation japanols1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1) 1 age4th   (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) 
+
+table3Math(7,1)=@coefs(3)
+table3Math(7,2)=@stderrs(3)
+
+equation japanols2wg.ls(w=totwgt^0.5, h)  stdScoreScience4th  (itsex=1)  1  age4th   (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) 
+
+table3Science(7,1)=@coefs(3)
+table3Science(7,2)=@stderrs(3)
+
+'RF
+equation japanrf1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) 
+
+table3Math(7,3)=@coefs(3)
+table3Math(7,4)=@stderrs(3)
+
+equation japanrf2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  r (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) 
+
+table3Science(7,3)=@coefs(3)
+table3Science(7,4)=@stderrs(3)
+
+'FS
+equation japanfs1wg.ls(w=totwgt^0.5, h) age4th (itsex=1)  1  r   (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) 
+
+table3Math(7,5)=@coefs(3)
+table3Math(7,6)=@stderrs(3)
+
+table3Science(7,5)=@coefs(3)
+table3Science(7,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+japanfs1wg.fit(f=na) agehat
+
+equation japaniv1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat   (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) 
+
+table3Math(7,7)=@coefs(3)
+table3Math(7,8)=@stderrs(3)
+
+equation japaniv2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat   (acbgcomm=1 OR acbgcomm=2) (acbgcomm=999) 
+
+table3Science(7,7)=@coefs(3)
+table3Science(7,8)=@stderrs(3)
+
+'Percentile differences
+
+'RF predictions
+'MathScorehat = -0.37140101247*(ITSEX=1) + 51.8864866534*1 + 0.280323765903*R - 6.15309083837*(IDGRADE=3) - 1.06426231131*(ACBGCOMM=1 OR ACBGCOMM=2) + 0.707555123271*(ACBGCOMM=999)
+
+'smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND IDCNTRY=392 AND R=0 
+
+'percentilesMath(7,1) = @mean(MathScorehat)
+
+'smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND IDCNTRY=392 AND R=11
+'percentilesMath(7,2) = @mean(MathScorehat)
+
+'percentilesMath(7,3) = @cnorm((percentilesMath(4,1)-50)/10)
+'percentilesMath(7,4) = @cnorm((percentilesMath(4,2)-50)/10)
+
+'percentilesMath(7,5)  = percentilesMath(4,4) - percentilesMath(4,3) 
+
+
+
+'New Zealand
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND IDCNTRY=554 AND (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+
+equation nzols1wg.ls(w=totwgt^0.5, h)  stdScoreMath4th  (itsex=1)  1  age4th   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(8,1)=@coefs(3)
+table3Math(8,2)=@stderrs(3)
+
+equation nzols2wg.ls(w=totwgt^0.5, h)  stdScoreScience4th  (itsex=1)  1  age4th   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(8,1)=@coefs(3)
+table3Science(8,2)=@stderrs(3)
+
+'RF
+equation nzrf1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(8,3)=@coefs(3)
+table3Math(8,4)=@stderrs(3)
+
+equation nzrf2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  r (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(8,3)=@coefs(3)
+table3Science(8,4)=@stderrs(3)
+
+'FS
+equation nzfs1wg.ls(w=totwgt^0.5, h) age4th (itsex=1)  1  r (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(8,5)=@coefs(3)
+table3Math(8,6)=@stderrs(3)
+
+table3Science(8,5)=@coefs(3)
+table3Science(8,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+nzfs1wg.fit(f=na) agehat
+
+equation nziv1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(8,7)=@coefs(3)
+table3Math(8,8)=@stderrs(3)
+
+equation nziv2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1) (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(8,7)=@coefs(3)
+table3Science(8,8)=@stderrs(3)
+
+
+
+
+'Norway
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND IDCNTRY=578 AND (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+
+equation norwayols1wg.ls(w=totwgt^0.5, h)  stdScoreMath4th  (itsex=1)  1  age4th  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(9,1)=@coefs(3)
+table3Math(9,2)=@stderrs(3)
+
+equation norwayols2wg.ls(w=totwgt^0.5, h)  stdScoreScience4th  (itsex=1)  1  age4th (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(9,1)=@coefs(3)
+table3Science(9,2)=@stderrs(3)
+
+'RF
+equation norwayrf1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(9,3)=@coefs(3)
+table3Math(9,4)=@stderrs(3)
+
+equation norwayrf2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  r (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(9,3)=@coefs(3)
+table3Science(9,4)=@stderrs(3)
+
+'FS
+equation norwayfs1wg.ls(w=totwgt^0.5, h) age4th (itsex=1)  1  r   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(9,5)=@coefs(3)
+table3Math(9,6)=@stderrs(3)
+
+table3Science(9,5)=@coefs(3)
+table3Science(9,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+norwayfs1wg.fit(f=na) agehat
+
+equation norwayiv1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(9,7)=@coefs(3)
+table3Math(9,8)=@stderrs(3)
+
+equation norwayiv2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(9,7)=@coefs(3)
+table3Science(9,8)=@stderrs(3)
+
+
+'Portugal
+smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND IDCNTRY=620 AND (r_wgwg>-13 AND r_wgwg<0) AND idgrader4th=2
+
+equation portugalols1wg.ls(w=totwgt^0.5, h)  stdScoreMath4th  (itsex=1)  1  age4th  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(10,1)=@coefs(3)
+table3Math(10,2)=@stderrs(3)
+
+show table3Math
+show table3Science
+
+equation portugalols2wg.ls(w=totwgt^0.5, h)  stdScoreScience4th  (itsex=1)  1  age4th  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(10,1)=@coefs(3)
+table3Science(10,2)=@stderrs(3)
+
+'RF
+equation portugalrf1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(10,3)=@coefs(3)
+table3Math(10,4)=@stderrs(3)
+
+equation portugalrf2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  r  (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(10,3)=@coefs(3)
+table3Science(10,4)=@stderrs(3)
+
+'FS
+equation portugalfs1wg.ls(w=totwgt^0.5, h) age4th (itsex=1)  1  r   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(10,5)=@coefs(3)
+table3Math(10,6)=@stderrs(3)
+
+table3Science(10,5)=@coefs(3)
+table3Science(10,6)=@stderrs(3)
+
+'IV
+series agehat = na
+'From FS, View>>> Representations >>> Substituted Coefficients:
+portugalfs1wg.fit(f=na) agehat
+
+equation portugaliv1wg.ls(w=totwgt^0.5, h) stdScoreMath4th (itsex=1)  1  agehat   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Math(10,7)=@coefs(3)
+table3Math(10,8)=@stderrs(3)
+
+equation portugaliv2wg.ls(w=totwgt^0.5, h) stdScoreScience4th (itsex=1)  1  agehat   (acbgcomm=1 OR acbgcomm=2)  (acbgcomm=999)  (asbgbrnm=1)  (asbgbrnm=999)  (asbgbrnf=1)  (asbgbrnf=999)  (asbgadu1=1 AND asbgadu2=1)  (asbgadu1=999 OR asbgadu2=999)  (asbgps01=1)  (asbgps01=999)  (asbgps02=1)  (asbgps02=999)  (asbgbook=4 or asbgbook=5)  (asbgbook=999)  (asbghome<999)*asbghome  (asbghome=999) 
+
+table3Science(10,7)=@coefs(3)
+table3Science(10,8)=@stderrs(3)
+
+show table3Math
+show table3Science
+
