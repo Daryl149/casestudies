@@ -393,13 +393,19 @@ next
 'start country loop
 
 ' Austria, Canada, Czech, England, Greece, Iceland, Japan, New Zealand, Norway, Portugal
-' 40, 124, 203, 926, 300, 352, 392, 554,578, 620
+
+vector(10) grens 		' the bound at the youngest 9-year-olds
+grens.fill 9, 4, 8, 6, 0, 1, 10, 5, 2, 3
+'grens.fill 9, 4, 8, 9, 6, 0, 1, 10, 5, 2, 3, 4, 5, 3, 4, 5
+
+'vector(10) adj_idcntry
+'adj_idcntry.fill 40,124,203, 203, 926,300,352,392,554,578,578,578,578, 620,620,620
 
 
 for !k = 1 to 10
 	
 	'smpl all
-	smpl @all' if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=countries(!k)) AND (R_WG>-13 AND R_WG<12) 
+	smpl @all if ITBIRTHM<>999 AND ITBIRTHY<>999 AND ITDATEM<>999 AND ITDATEY<>999 AND ITSEX<>999 AND ITSEX<>999 AND (IDCNTRY=countries(!k)) AND (R_WG>-13 AND R_WG<12) 
 	'+++++++++++estimate difference in average scores missing students++++++++++++
 	
 	'3rd grade math retentions
@@ -409,13 +415,15 @@ for !k = 1 to 10
 	
 	for !i = 1 to 12
 		mathretentions3!k(!i,1) = !i-1
-		if r_wgmathmeans4uniq!k(!i,2)<>0 AND r_wgmathmeans3uniq!k(!i+12,2)<>0 then
+'		if r_wgmathmeans4uniq!k(!i,2)<>0 AND r_wgmathmeans3uniq!k(!i+12,2)<>0 then
+		if r_wgmathmeans4uniq!k(!i,2)<>0 then
 		mathretentions3!k(!i,2) = r_wgmathmeans3uniq!k(!i,2)-(r_wgmathmeans3uniq!k(!i+12,2)*r_wgmathmeans3uniq!k(!i,2) /r_wgmathmeans4uniq!k(!i,2))							
 		else
 		mathretentions3!k(!i,2) = 0
 		endif
 		scienceretentions3!k(!i,1) = !i-1
-		if r_wgsciencemeans4uniq!k(!i,2) <> 0  AND r_wgsciencemeans3uniq!k(!i+12,2)<>0 then
+'		if r_wgsciencemeans4uniq!k(!i,2) <> 0  AND r_wgsciencemeans3uniq!k(!i+12,2)<>0 then
+		if r_wgsciencemeans4uniq!k(!i,2) <> 0 then
 		scienceretentions3!k(!i,2) = r_wgsciencemeans3uniq!k(!i,2)-(r_wgsciencemeans3uniq!k(!i+12,2)*r_wgsciencemeans3uniq!k(!i,2) /r_wgsciencemeans4uniq!k(!i,2))	
 		else
 		scienceretentions3!k(!i,2) = 0 
@@ -430,13 +438,13 @@ for !k = 1 to 10
 	for !i = 1 to 12
 		mathaccelerations4!k(!i,1) = !i- 13
 		if r_wgmathmeans3uniq!k(!i+12,2) <> 0  AND r_wgmathmeans4uniq!k(!i+12,2)<>0 then
-		mathaccelerations4!k(!i,2) = r_wgmathmeans4uniq!k(!i,2)-(r_wgmathmeans4uniq!k(!i,2)*r_wgmathmeans4uniq!k(!i+12,2) /r_wgmathmeans3uniq!k(!i+12,2))
+		mathaccelerations4!k(!i,2) = r_wgmathmeans4uniq!k(!i+12,2)-(r_wgmathmeans4uniq!k(!i,2)*r_wgmathmeans4uniq!k(!i+12,2) /r_wgmathmeans3uniq!k(!i+12,2))
 		else 
 		mathaccelerations4!k(!i,2) = 0
 		endif	
 		scienceaccelerations4!k(!i,1) = !i-13
 		if r_wgsciencemeans3uniq!k(!i+12,2) <> 0 AND r_wgsciencemeans4uniq!k(!i+12,2)<>0 then
-		scienceaccelerations4!k(!i,2) = r_wgsciencemeans4uniq!k(!i,2)-(r_wgsciencemeans4uniq!k(!i,2)*r_wgsciencemeans4uniq!k(!i+12,2) /r_wgsciencemeans3uniq!k(!i+12,2))
+		scienceaccelerations4!k(!i,2) = r_wgsciencemeans4uniq!k(!i+12,2)-(r_wgsciencemeans4uniq!k(!i,2)*r_wgsciencemeans4uniq!k(!i+12,2) /r_wgsciencemeans3uniq!k(!i+12,2))
 		else
 		scienceaccelerations4!k(!i,2) = 0
 		endif
